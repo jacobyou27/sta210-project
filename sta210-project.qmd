@@ -7,7 +7,15 @@ execute:
   echo: true
 ---
 
-```{r message = F, warning = F}
+## Introduction and Data
+The Melbourne housing market has exhibited significant volatility over recent years, characterized by fluctuating demand and varying price trends across different suburbs. Understanding these dynamics is crucial for potential homeowners, investors, policymakers, and those looking to buy a home. This project seeks to delve into the factors influencing property prices in Melbourne, utilizing a dataset that captures a wide range of property characteristics.
+
+The dataset was taken from the website Kaggle, a site that holds databases for research and machine learning. The dataset "Melbourne Housing Snapshot" was sourced from public real estate records, comprising of 13,580 properties sold in Melbourne during a recent period. Each entry in the dataset includes details such as the suburb, number of rooms, type of property, sale price, and other pertinent features like land and building area, presence of amenities such as car spaces, and the distance from the city center. This comprehensive data allows for a nuanced analysis of how various factors, from the physical attributes of properties to their geographical location, affect sale prices.
+
+## Research Question
+The primary research question this project seeks to answer is: "What are the key factors influencing property prices in Melbourne, and to what extent do they affect these prices?"
+
+```{r message = F, warning = F, include = FALSE}
 library(tidyverse)
 library(tidymodels)
 ```
