@@ -1,0 +1,14 @@
+---
+title: "STA 210 Final Project"
+author: "Jacob You"
+format: pdf
+editor: visual
+execute:
+  echo: true
+---
+
+```{r message = F, warning = F}
+library(tidyverse)
+library(tidymodels)
+```
+
