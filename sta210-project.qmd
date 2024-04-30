@@ -7,14 +7,11 @@ execute:
   echo: true
 ---
 
-## Introduction
+# Introduction
 The Melbourne housing market has exhibited significant volatility over recent years, characterized by fluctuating demand and varying price trends across different suburbs. Understanding these dynamics is crucial for potential homeowners, investors, policymakers, and those looking to buy a home. This project seeks to delve into the factors influencing property prices in Melbourne, utilizing a dataset that captures a wide range of property characteristics.
 
-## Research Question
-The primary research question this project seeks to answer is: "What are the key factors influencing property prices in Melbourne, and to what extent do they affect these prices?"
-
-## Data
-
+### Research Question
+Because there are so many factors that go into the price of a home, my research question is: What factors have the greatest influence on the price of a home in Melbourne, and how do these factors impact the price?
 ```{r message = F, warning = F, include = FALSE}
 library(tidyverse)
 library(tidymodels)
@@ -26,15 +23,18 @@ housing_data <- housing_data %>%
          YearBuilt > 1200,
          BuildingArea > 0)
 ```
-The dataset was taken from the website Kaggle, a site that holds databases for research and machine learning. The dataset "Melbourne Housing Snapshot" was sourced from public real estate records, comprising of 13,580 properties sold in Melbourne during a recent period. Each entry in the dataset includes quantitative details about the home including the price, the number of rooms, bedrooms, and bathrooms, the year built, and building area. The dataset also has categorical variables such as the general region in Melbourne, the suburb, and the type of property between houses, units, and townhouses.
 
+### Dataset Source
+The dataset was taken from the website Kaggle, a site that holds databases for research and machine learning. The dataset "Melbourne Housing Snapshot" was sourced from public real estate records, comprising of 13,580 properties sold in Melbourne during a recent period. Each entry in the dataset includes quantitative details about the home including the price, the number of rooms, bedrooms, and bathrooms, the year the property was built, and total area of the building. The dataset also has categorical variables such as the general region in Melbourne, the suburb, and the type of property between houses, units, and townhouses.
+
+### Cleaning
 To clean the data, all extreme outliers and invalid data was removed. Five buildings with building areas greater than 3000 square meters were removed, as such large outliers are not representative of the average house, and may cause errors in the model. Additionally, one building built before 1200 was removed, as the extreme outlier may also cause errors in the model. Finally, houses with a building area of 0 were treated as invalid and were removed.
 
-## Exploratory Data Analysis
-
+# Exploratory Data Analysis
 In order to build an accurate model, we must first take a look at the relationship between price and other variables. Through this analysis, we find that the number of rooms and building size seem to have a strong correlation with price. Price also seems to have a correlation with the number of bedrooms and bathrooms, general region, the type of property, latitude and longitude, and the year built, which cannot be included here due to space constraints.
-```{r message = F, out.width="80%", warning = F, echo = FALSE}
-summary(housing_data$Price)
+
+### Price
+```{r message = F, out.width="70%", warning = F, echo = FALSE}
 
 ggplot(housing_data, aes(x = Price)) +
   geom_histogram(bins = 30, fill = "gray", color = "black") +
@@ -43,7 +43,8 @@ ggplot(housing_data, aes(x = Price)) +
 ```
 The median of the data was around 0.89 million dollars, with the mean being slightly higher at 1.08 million dollars. The histogram of property prices illustrates the distribution across the dataset. The distribution is right-skewed, suggesting that while affordable properties dominate the market, a smaller number of high-priced properties significantly exceed the general price range, potentially due to rare features or desirable locations.
 
-```{r message = F, out.width="80%", warning = F, echo = FALSE}
+### Number of Rooms
+```{r message = F, out.width="70%", warning = F, echo = FALSE}
 ggplot(housing_data, aes(x = factor(Rooms), y = Price)) +
   geom_boxplot(fill = "lightblue", color = "black") +
   labs(title = "Price Distribution by Number of Rooms", x = "Number of Rooms", y = "Price") +
@@ -52,7 +53,8 @@ ggplot(housing_data, aes(x = factor(Rooms), y = Price)) +
 
 The boxplots show a positive correlation between the number of rooms and the overall price. As the number of rooms increases, both the median price and the range of prices tend to increase, suggesting that properties with more rooms typically have higher prices, likely reflecting larger living spaces.
 
-```{r message = F, out.width="80%", warning = F, echo = FALSE}
+### Building Area
+```{r message = F, out.width="70%", warning = F, echo = FALSE}
 ggplot(housing_data, aes(x = BuildingArea, y = Price)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
@@ -60,4 +62,48 @@ ggplot(housing_data, aes(x = BuildingArea, y = Price)) +
   theme_minimal()
 ```
 The scatterplot shows an overall positive correlation, suggesting that, on average, properties with larger building areas tend to have higher prices. This also correlates with the positive correlation between number of rooms and price, as the more rooms there are, the larger the building area.
+
+# Methodology
+To achieve my goal of finding the factors with the greatest impact on price and understanding how they affect the price, I decided on implementing a log-linear regression model. The prices exhibited a right-skewed distribution, which led to problems for an ordinary linear regression. For a normal multiple predictor model, constant variance and normality were violated. However, applying a logarithmic transformation to price helped normalize the distribution, allowing us to assume homoscedasticity and normality. 
+
+### Predictor Variables
+For the model, I included all of the variables I found to have a noticable correlation with price. The number of rooms, bedrooms, bathroom, car spaces, and building area all related to the overall size of the house and seemed to have a correlation to price. Furthermore, the year the house was built in, the type of the house, and the region of Melbourne the house is in all showed correlation when conducting EDA. 
+
+Although longitude and latitude were significant, using them as predictors for a linear model would likely harm the model, as an increase or decrease in latitude could have drastically different effects depending on the region and surroundings. Furthermore, the irregular shape of Melbourne would cause further complications in including coordinates.
+```{r message = F, out.width="70%", warning = F, echo = FALSE}
+housing_model <- lm(log(Price) ~ Rooms + Regionname + BuildingArea +
+      YearBuilt + Bathroom + Type + Car, 
+      data = na.omit(housing_data))
+
+```
+
+### Assumptions
+```{r message = F, out.width="60%", warning = F, echo = FALSE}
+library(cowplot)
+
+housing_aug <- augment(housing_model)
+
+graph1 <- ggplot(housing_aug, aes(x = .fitted, y = .resid)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = "darkred") + 
+  labs(x = "Fitted (predicted) value", y = "Residual") + 
+  theme_minimal()
+
+graph2 <- ggplot(housing_aug, aes(sample = .resid)) +
+  stat_qq() + 
+  stat_qq_line() + 
+  theme_bw() + 
+  labs(x = "Theoretical quantiles", 
+       y = "Sample quantiles")
+
+plot_grid(graph1, graph2)
+```
+The assumption of linearity is satisfied, as the residuals are symmetrically distributed about the horizontal axis. After the log transformation, the variance of the residuals is much more even, and we can assume that the constant variance assumption is satisfied. In the Q-Q plot, there is some degree of deviation in the tails. However, this deviation is quite small, and only on the very far ends of the Q-Q plot, so normality seems to be satisfied.
+
+Independence however, may not be satisfied. In the real world, complex markets like the housing market are rarely ever independent. Properties built during similar times may have been built in similar economic conditions and similar market cycles. Changes in building standards and styles may have influenced property values systematically. Furthermore, houses in the same neighborhood or area might have similar determinants from shared amenities, crime rates, or more. I have incorporated the general region of the property into the model to mitigate the effect of properties being nearby each other, but due to the incredibly complex nature of the housing market, there is not much more I can do to satisfy independence within the contents of the course.
+
+### Model Output
+```{r}
+tidy(housing_model)
+```
 
